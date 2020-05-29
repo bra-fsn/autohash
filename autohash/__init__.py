@@ -39,7 +39,7 @@ class AutoHash:
         type_info(tuple, ident, tuple),
         type_info(list, ident, tuple),
         type_info(collections.deque, ident, tuple),
-        type_info(collections.Iterable, ident, frozenset)  # other iterables
+        type_info(collections.abc.Iterable, ident, frozenset)  # other iterables
     )
 
     # hash_func can be set to replace the built-in hash function
