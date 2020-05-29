@@ -1,8 +1,7 @@
 import collections
-import operator
 import sys
-import itertools
 import reprlib
+
 
 # a wrapper to make an object hashable, while preserving equality
 class AutoHash:
@@ -28,35 +27,39 @@ class AutoHash:
     # distinguish ordered from unordered containers
     # so we need to just list them out manually as needed
 
-    type_info = collections.namedtuple('type_info', 'type transformation aggregator')
-    ident = lambda x: x
+    type_info = collections.namedtuple(
+        'type_info', 'type transformation aggregator')
+
+    def ident(x): return x
     # order matters; first match is used to handle a datatype
     known_types = (
-        type_info(dict, lambda d: d.items(), frozenset), # also handles defaultdict
+        # also handles defaultdict
+        type_info(dict, lambda d: d.items(), frozenset),
         type_info(collections.OrderedDict, ident, tuple),
         type_info(tuple, ident, tuple),
         type_info(list, ident, tuple),
         type_info(collections.deque, ident, tuple),
-        type_info(collections.Iterable, ident, frozenset) # other iterables
+        type_info(collections.Iterable, ident, frozenset)  # other iterables
     )
 
     # hash_func can be set to replace the built-in hash function
     # cache can be turned on; if it is, cycles will be detected,
     # otherwise cycles in a data structure will cause failure
     def __init__(self, data, hash_func=hash, cache=False, verbose=False):
-        self._data=data
-        self.hash_func=hash_func
-        self.verbose=verbose
-        self.cache=cache
+        self._data = data
+        self.hash_func = hash_func
+        self.verbose = verbose
+        self.cache = cache
         # cache objects' hashes for performance and to deal with cycles
         if self.cache:
-            self.seen={}
+            self.seen = {}
 
     def hash_ex(self, o):
         # note: isinstance(o, Hashable) won't check inner types
         try:
             if self.verbose:
-                print(type(o), reprlib.repr(o), self.hash_func(o), file=sys.stderr)
+                print(type(o), reprlib.repr(o),
+                      self.hash_func(o), file=sys.stderr)
             return self.hash_func(o)
         except TypeError:
             pass
@@ -64,7 +67,7 @@ class AutoHash:
         # we let built-in hash decide if the hash value is worth caching
         # so we don't cache the built-in hash results
         if self.cache and id(o) in self.seen:
-            return self.seen[id(o)][0] # found in cache
+            return self.seen[id(o)][0]  # found in cache
 
         # check if o can be handled by decomposing it into components
         for typ, transformation, aggregator in AutoHash.known_types:
@@ -80,15 +83,18 @@ class AutoHash:
                 except TypeError:
                     # components not hashable with built-in;
                     # apply our extended hash function to them
-                    h = self.hash_func(aggregator(map(self.hash_ex, transformation(o))))
+                    h = self.hash_func(aggregator(
+                        map(self.hash_ex, transformation(o))))
                 if self.cache:
-                    # storing the object too, otherwise memory location will be reused
+                    # storing the object too, otherwise memory location will be
+                    # reused
                     self.seen[id(o)] = (h, o)
                 if self.verbose:
                     print(type(o), reprlib.repr(o), h, file=sys.stderr)
                 return h
 
-        raise TypeError('Object {} of type {} not hashable'.format(repr(o), type(o)))
+        raise TypeError(
+            'Object {} of type {} not hashable'.format(repr(o), type(o)))
 
     def __hash__(self):
         return self.hash_ex(self._data)
@@ -98,21 +104,28 @@ class AutoHash:
         if self is other:
             return True
 
-        # 1) type(self) a proper subclass of type(other) => self.__eq__ will be called first
+        # 1) type(self) a proper subclass of type(other) => self.__eq__ will be
+        #    called first
         # 2) any other situation => lhs.__eq__ will be called first
 
-        # case 1. one side is a subclass of the other, and AutoHash.__eq__ is not overridden in either
-        # => the subclass instance's __eq__ is called first, and we should compare self._data and other._data
+        # case 1. one side is a subclass of the other, and AutoHash.__eq__ is
+        #       not overridden in either
+        # => the subclass instance's __eq__ is called first, and we should
+        #       compare self._data and other._data
         # case 2. neither side is a subclass of the other; self is lhs
-        # => we can't compare to another type; we should let the other side decide what to do, return NotImplemented
+        # => we can't compare to another type; we should let the other side
+        #       decide what to do, return NotImplemented
         # case 3. neither side is a subclass of the other; self is rhs
-        # => we can't compare to another type, and the other side already tried and failed;
+        # => we can't compare to another type, and the other side already tried
+        #       and failed;
         # we should return False, but NotImplemented will have the same effect
-        # any other case: we won't reach the __eq__ code in this class, no need to worry about it
+        # any other case: we won't reach the __eq__ code in this class, no need
+        # to worry about it
 
-        if isinstance(self, type(other)): # identifies case 1
+        if isinstance(self, type(other)):  # identifies case 1
             return self._data == other._data
-        else: # identifies cases 2 and 3
+        else:  # identifies cases 2 and 3
             return NotImplemented
+
 
 __version__ = '0.0.1'
