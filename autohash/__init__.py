@@ -127,5 +127,8 @@ class AutoHash:
         else:  # identifies cases 2 and 3
             return NotImplemented
 
+    def __repr__(self):
+        return repr(self._data)
 
-__version__ = '0.0.0'
+
+__version__ = '0.0.1'
